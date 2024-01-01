@@ -3,6 +3,7 @@ const app = express();
 var cors = require("cors");
 const nodemailer = require("nodemailer");
 const port = 5000;
+require('dotenv').config();
 
 app.use(cors());
 app.use(express.json());
@@ -30,15 +31,15 @@ app.post("/send-email", (req, res) => {
     service: "gmail",
     auth: {
       user: "refatbubt@gmail.com", // replace with your Gmail email
-      pass: "hgya gguk ynon spnk", // replace with your Gmail password
+      pass: process.env.EMAIL_PASS // replace with your Gmail password
     },
   });
 
   // Email options
   const mailOptions = {
     from: "refatbhuyan4@gmail.com",
-    to: "refatbhuyan4@gmail.com", // replace with the recipient email
-    subject: "New Form Submission",
+    to: "refatbhuyan4@gmail.com, refatbubt@gmail.com, bm.lava@gmail.com", // replace with the recipient email
+    subject: "New Orders",
     text: `Name of Customer: ${name}\nAddress: ${address}\nPhone: ${phone}\nOrdered Food: ${Food}\nFoodPrice: ${foodPrice}\nDelivary Type: ${delivaryType}\nQuantity: ${quantity}\nTotal Amount: ${TotalAmount}`,
   };
 
