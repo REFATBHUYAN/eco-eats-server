@@ -3,7 +3,7 @@ const app = express();
 var cors = require("cors");
 const nodemailer = require("nodemailer");
 const port = 5000;
-require('dotenv').config();
+require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
@@ -20,7 +20,7 @@ app.post("/send-email", (req, res) => {
     TotalAmount,
     address,
     delivaryType,
-    foodPrice,
+    totalPrice,
     name,
     phone,
     quantity,
@@ -31,16 +31,34 @@ app.post("/send-email", (req, res) => {
     service: "gmail",
     auth: {
       user: "refatbubt@gmail.com", // replace with your Gmail email
-      pass: process.env.EMAIL_PASS // replace with your Gmail password
+      pass: process.env.EMAIL_PASS, // replace with your Gmail password
     },
   });
 
   // Email options
+
+const item = `
+Customer Name: ${name}
+Address: ${address} 
+Delivery Type: ${delivaryType}
+Mobile: ${phone}
+Ordered Item:
+
+    ${Food?.map(
+      (food, i) => `
+              ${i + 1}. ${food.title}
+              ${food.weight}
+              Price:${food.priceInBd}
+              Quantity: ${food.quantity}
+    `
+    )}
+Total Amount: ${totalPrice}`;
+
   const mailOptions = {
     from: "refatbhuyan4@gmail.com",
     to: "refatbhuyan4@gmail.com, refatbubt@gmail.com, bm.lava@gmail.com", // replace with the recipient email
     subject: "New Orders",
-    text: `Name of Customer: ${name}\nAddress: ${address}\nPhone: ${phone}\nOrdered Food: ${Food}\nFoodPrice: ${foodPrice}\nDelivary Type: ${delivaryType}\nQuantity: ${quantity}\nTotal Amount: ${TotalAmount}`,
+    text: item,
   };
 
   // Send email
