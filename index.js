@@ -58,10 +58,9 @@ async function run() {
       res.send(result);
     });
     app.post("/send-email", async (req, res) => {
-      //   const { name, email, message } = req.body;
-      // const date = new Date().toISOString().split("T")[0];
+      
       const date = moment().format().split("T")[0];
-      console.log(date);
+      
       const {
         Food,
         address,
@@ -88,15 +87,19 @@ async function run() {
       <style>
         body {
           font-family: 'Arial', sans-serif;
-          color: #333;
+          color: #94A3B8;
         }
 
-        h1 {
-          color: #28A745;
+        h3 {
+          color: #22C55E;
+        }
+        h4 {
+          color: #475569;
         }
 
         p {
-          color: #555;
+          color: #475569;
+          margin: 5px 0;
         }
 
         strong {
@@ -121,7 +124,7 @@ async function run() {
       </style>
     </head>
     <body>
-      <h1>Order Details</h1>
+      <h3>EcoEats Order Details</h3>
       <p><strong>Customer Name:</strong> ${name}</p>
       <p><strong>Address:</strong> ${address}</p>
       <p><strong>Delivery Type:</strong> ${
@@ -136,12 +139,10 @@ async function run() {
         ${Food.map(
           (item, i) => `
           <li>
-            <h4><strong>${i + 1}. ${item.title} - ${
-            item.weight
-          }</strong></h4>
-            <p><strong>Weight:</strong> ${item.price}</p>
+            <h4><strong>${i + 1}. ${item.title} - ${item.weight}</strong></h4>
+            <p><strong>Price:</strong> ${item.price}</p>
             <p><strong>Quantity:</strong> ${item.quantity}</p>
-            <p><strong>Price:</strong> ${item.quantity * item.price} tk</p>
+            <p><strong>Sub-Total:</strong> ${item.quantity * item.price} tk</p>
           </li>
         `
         ).join("")}
@@ -178,7 +179,7 @@ async function run() {
 
       const mailOptions = {
         from: "refatbhuyan4@gmail.com",
-        to: "refatbhuyan4@gmail.com, refatbubt@gmail.com", // replace with the recipient email
+        to: "refatbhuyan4@gmail.com, bm.lava@gmail.com", // replace with the recipient email
         // to: "refatbhuyan4@gmail.com, refatbubt@gmail.com, bm.lava@gmail.com", // replace with the recipient email
         subject: "EcoEats New Order",
         html: htmlBody,
@@ -196,12 +197,14 @@ async function run() {
       const result1 = await orderCollection.find().toArray();
 
       function formatToFourDigits(number) {
-        return String(number).padStart(4, '0');
+        return String(number).padStart(5, "0");
       }
 
       // send data to database
       const newOrder = {
-        invoice: `WC${formatToFourDigits(result1.length === 0 ? 1 : result.length)}`,
+        invoice: `WC${formatToFourDigits(
+          result1.length === 0 ? 1 : result1.length
+        )}`,
         date: date,
         name: name,
         phone: phone,
