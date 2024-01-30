@@ -58,14 +58,14 @@ async function run() {
       res.send(result);
     });
     app.post("/send-email", async (req, res) => {
-      
       const date = moment().format().split("T")[0];
-      
+
       const {
         Food,
         address,
         deliveryType,
         totalPrice,
+        orderedTime,
         name,
         phone,
         deliveryCharge,
@@ -113,7 +113,7 @@ async function run() {
         }
 
         li {
-          margin-bottom: 20px;
+          margin-bottom: 5px;
         }
 
         li p {
@@ -155,27 +155,7 @@ async function run() {
   </html>
 `;
 
-      const item = `
-    Customer Name: ${name}
-    Address: ${address} 
-    Delivery Type: ${
-      deliveryType === "ঢাকার ভেতরে"
-        ? "Inside Dhaka - 80 tk"
-        : "Outside Dhaka - 100 tk"
-    }
-    Mobile: ${phone}
-    Ordered Item:
-        ${Food?.map(
-          (food, i) => `
-                  ${i + 1}. ${food.title} - ${food.weight}
-                  Price: ${food.price} tk
-                  Quantity: ${food.quantity}
-                  Subtotal: ${food.quantity * food.price} tk
-        `
-        )}
-    Total Amount: ${totalPrice} + ${deliveryCharge} = ${
-        deliveryCharge + totalPrice
-      } tk`;
+      
 
       const mailOptions = {
         from: "refatbhuyan4@gmail.com",
@@ -206,6 +186,7 @@ async function run() {
           result1.length === 0 ? 1 : result1.length
         )}`,
         date: date,
+        time: orderedTime,
         name: name,
         phone: phone,
         address: address,
@@ -215,13 +196,21 @@ async function run() {
         deliveryCharge: deliveryCharge,
         status: "Pending",
       };
-      const result = await orderCollection.insertOne(newOrder);
-      res.send(result);
+      const insertedId  = await orderCollection.insertOne(newOrder);
+      console.log(insertedId)
+      res.send({ insertedId });
     });
 
     app.get("/orders/:date", async (req, res) => {
       const result = await orderCollection
         .find({ date: req.params.date })
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/singleorder/:id", async (req, res) => {
+      const result = await orderCollection
+        .find({ _id: new ObjectId(req.params.id) })
         .toArray();
       res.send(result);
     });
