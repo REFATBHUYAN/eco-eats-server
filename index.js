@@ -21,12 +21,23 @@ const client = new MongoClient(uri, {
   },
 });
 
+let orderCounter = 1;
+
+// Middleware to increment the order counter for POST requests to /placeOrder
+app.use((req, res, next) => {
+  if (req.method === "POST" && req.path === "/send-email") {
+    req.orderCounter = orderCounter++;
+  }
+  next();
+});
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     client.connect();
 
     const orderCollection = client.db("musicSite").collection("orders");
+    const countersCollection = client.db("musicSite").collection("counters");
     // best electronics code
     app.get("/musics", async (req, res) => {
       const result = await musicCollection.find().toArray();
@@ -155,11 +166,9 @@ async function run() {
   </html>
 `;
 
-      
-
       const mailOptions = {
         from: "refatbhuyan4@gmail.com",
-        to: "refatbhuyan4@gmail.com, bm.lava@gmail.com", // replace with the recipient email
+        to: "refatbhuyan4@gmail.com", // replace with the recipient email
         // to: "refatbhuyan4@gmail.com, refatbubt@gmail.com, bm.lava@gmail.com", // replace with the recipient email
         subject: "EcoEats New Order",
         html: htmlBody,
@@ -174,17 +183,31 @@ async function run() {
         res.status(200).send("Email sent: " + info.response);
       });
 
-      const result1 = await orderCollection.find().toArray();
+      // await countersCollection.updateOne(
+      //   { _id: 'orderSerial' },
+      //   { $setOnInsert: { value: 1 } },
+      //   { upsert: true }
+      // );
+  
+      // Find and update the orderSerial counter within the /placeOrder route
+      const result = await countersCollection.findOneAndUpdate(
+        { _id: 'orderSerial' },
+        { $inc: { value: 1 } },
+        { returnDocument: 'after' }
+      );
 
       function formatToFourDigits(number) {
         return String(number).padStart(5, "0");
       }
+      console.log(result)
+
 
       // send data to database
       const newOrder = {
-        invoice: `WC${formatToFourDigits(
-          result1.length === 0 ? 1 : result1.length
-        )}`,
+        invoice: `WC${formatToFourDigits(result.value)}`,
+        // invoice: `WC${formatToFourDigits(
+        //   result1.length === 0 ? 1 : result1.length
+        // )}`,
         date: date,
         time: orderedTime,
         name: name,
@@ -196,8 +219,8 @@ async function run() {
         deliveryCharge: deliveryCharge,
         status: "Pending",
       };
-      const insertedId  = await orderCollection.insertOne(newOrder);
-      console.log(insertedId)
+      const insertedId = await orderCollection.insertOne(newOrder);
+      console.log(insertedId);
       res.send({ insertedId });
     });
 
@@ -237,6 +260,36 @@ async function run() {
         },
       };
       const result = await orderCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+    app.patch("/cancelled/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          status: "Cancelled",
+        },
+      };
+      const result = await orderCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+    app.delete("/deleteorder/:id", async (req, res) => {
+      const id = req.params.id;
+      
+      // console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const result = await orderCollection.deleteOne(filter);
+      
+      res.send(result);
+    });
+    app.put("/updateorder/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedOrder = req.body;
+      // console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const result =  await orderCollection.updateOne(filter, { $set: updatedOrder });
+      
       res.send(result);
     });
 
