@@ -10,7 +10,8 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dp83dff.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.s3ihbep.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dp83dff.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -36,8 +37,9 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     client.connect();
 
-    const orderCollection = client.db("musicSite").collection("orders");
-    const countersCollection = client.db("musicSite").collection("counters");
+    const orderCollection = client.db("ecoEats").collection("orders");
+    const countersCollection = client.db("ecoEats").collection("counters");
+    // const countersCollection = client.db("musicSite").collection("counters");
     // best electronics code
     app.get("/musics", async (req, res) => {
       const result = await musicCollection.find().toArray();
@@ -69,9 +71,10 @@ async function run() {
       res.send(result);
     });
     app.post("/send-email", async (req, res) => {
-      const date = moment().format().split("T")[0];
+      // const date = moment().format().split("T")[0];
 
       const {
+        date,
         Food,
         address,
         deliveryType,
@@ -167,8 +170,8 @@ async function run() {
 `;
 
       const mailOptions = {
-        from: "refatbhuyan4@gmail.com",
-        to: "refatbhuyan4@gmail.com", // replace with the recipient email
+        from: "web.ecoeatsbd@gmail.com",
+        to: "refatbhuyan4@gmail.com, bm.lava@gmail.com, web.ecoeatsbd@gmail.com", // replace with the recipient email
         // to: "refatbhuyan4@gmail.com, refatbubt@gmail.com, bm.lava@gmail.com", // replace with the recipient email
         subject: "EcoEats New Order",
         html: htmlBody,
@@ -183,11 +186,11 @@ async function run() {
         res.status(200).send("Email sent: " + info.response);
       });
 
-      // await countersCollection.updateOne(
-      //   { _id: 'orderSerial' },
-      //   { $setOnInsert: { value: 1 } },
-      //   { upsert: true }
-      // );
+      await countersCollection.updateOne(
+        { _id: 'orderSerial' },
+        { $setOnInsert: { value: 6300 } },
+        { upsert: true }
+      );
   
       // Find and update the orderSerial counter within the /placeOrder route
       const result = await countersCollection.findOneAndUpdate(
@@ -199,12 +202,12 @@ async function run() {
       function formatToFourDigits(number) {
         return String(number).padStart(5, "0");
       }
-      console.log(result)
+      // console.log(result)
 
 
       // send data to database
       const newOrder = {
-        invoice: `WC${formatToFourDigits(result.value)}`,
+        invoice: `C${formatToFourDigits(result.value)}`,
         // invoice: `WC${formatToFourDigits(
         //   result1.length === 0 ? 1 : result1.length
         // )}`,
@@ -220,7 +223,7 @@ async function run() {
         status: "Pending",
       };
       const insertedId = await orderCollection.insertOne(newOrder);
-      console.log(insertedId);
+      // console.log(insertedId);
       res.send({ insertedId });
     });
 
