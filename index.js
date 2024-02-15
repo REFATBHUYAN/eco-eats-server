@@ -10,7 +10,8 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.s3ihbep.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@clusterecoeats.wesj4vc.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.s3ihbep.mongodb.net/?retryWrites=true&w=majority`;
 // const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.dp83dff.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -37,8 +38,8 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     client.connect();
 
-    const orderCollection = client.db("ecoEats").collection("orders");
-    const countersCollection = client.db("ecoEats").collection("counters");
+    const orderCollection = client.db("ecoEatsData").collection("orders");
+    const countersCollection = client.db("ecoEatsData").collection("counters");
     // const countersCollection = client.db("musicSite").collection("counters");
     // best electronics code
     app.get("/musics", async (req, res) => {
@@ -70,6 +71,38 @@ async function run() {
       const result = await orderCollection.find().toArray();
       res.send(result);
     });
+
+    app.get("/allordersstate", async (req, res) => {
+      const totalOrderPrice = await orderCollection.aggregate([
+        { $match: { status: { $ne: "canceled" } } },
+        { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+      ]).toArray();
+
+      // Get total canceled, shipped, pending orders and total number of products
+      let orderStats = await orderCollection.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $project: { _id: 0, status: "$_id", count: 1 } },
+      ]).toArray();
+      // console.log(orderStats) 
+
+      if (!Array.isArray(orderStats)) {
+        orderStats = [];
+      }
+      // console.log(totalOrderPrice) 
+
+      // Response
+      res.json({
+        totalOrderPrice: totalOrderPrice[0]?.total || 0,
+        totalCanceled:
+          orderStats?.find((stat) => stat.status === "Cancelled")?.count || 0,
+        totalShipped:
+          orderStats?.find((stat) => stat.status === "Shipped")?.count || 0,
+        totalPending:
+          orderStats?.find((stat) => stat.status === "Pending")?.count || 0,
+        totalProducts: await orderCollection.countDocuments(),
+      });
+    });
+
     app.post("/send-email", async (req, res) => {
       // const date = moment().format().split("T")[0];
 
@@ -89,7 +122,7 @@ async function run() {
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: "refatbubt@gmail.com", // replace with your Gmail email
+          user: "web.ecoeatsbd@gmail.com", // replace with your Gmail email
           pass: process.env.EMAIL_PASS, // replace with your Gmail password
         },
       });
@@ -171,7 +204,7 @@ async function run() {
 
       const mailOptions = {
         from: "web.ecoeatsbd@gmail.com",
-        to: "refatbhuyan4@gmail.com, bm.lava@gmail.com, web.ecoeatsbd@gmail.com", // replace with the recipient email
+        to: "web.ecoeatsbd@gmail.com", // replace with the recipient email
         // to: "refatbhuyan4@gmail.com, refatbubt@gmail.com, bm.lava@gmail.com", // replace with the recipient email
         subject: "EcoEats New Order",
         html: htmlBody,
@@ -186,17 +219,17 @@ async function run() {
         res.status(200).send("Email sent: " + info.response);
       });
 
-      await countersCollection.updateOne(
-        { _id: 'orderSerial' },
-        { $setOnInsert: { value: 6300 } },
-        { upsert: true }
-      );
-  
+      // await countersCollection.updateOne(
+      //   { _id: 'orderSerial' },
+      //   { $setOnInsert: { value: 6320 } },
+      //   { upsert: true }
+      // );
+
       // Find and update the orderSerial counter within the /placeOrder route
       const result = await countersCollection.findOneAndUpdate(
-        { _id: 'orderSerial' },
+        { _id: "orderSerial" },
         { $inc: { value: 1 } },
-        { returnDocument: 'after' }
+        { returnDocument: "after" }
       );
 
       function formatToFourDigits(number) {
@@ -204,10 +237,9 @@ async function run() {
       }
       // console.log(result)
 
-
       // send data to database
       const newOrder = {
-        invoice: `C${formatToFourDigits(result.value)}`,
+        invoice: `WC${formatToFourDigits(result.value)}`,
         // invoice: `WC${formatToFourDigits(
         //   result1.length === 0 ? 1 : result1.length
         // )}`,
@@ -279,11 +311,11 @@ async function run() {
     });
     app.delete("/deleteorder/:id", async (req, res) => {
       const id = req.params.id;
-      
+
       // console.log(id);
       const filter = { _id: new ObjectId(id) };
       const result = await orderCollection.deleteOne(filter);
-      
+
       res.send(result);
     });
     app.put("/updateorder/:id", async (req, res) => {
@@ -291,8 +323,10 @@ async function run() {
       const updatedOrder = req.body;
       // console.log(id);
       const filter = { _id: new ObjectId(id) };
-      const result =  await orderCollection.updateOne(filter, { $set: updatedOrder });
-      
+      const result = await orderCollection.updateOne(filter, {
+        $set: updatedOrder,
+      });
+
       res.send(result);
     });
 
